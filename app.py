@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb  8 20:38:30 2019
+Created on Sat Jun 8 20:38:30 2022
 @author: unily
 """
 import dash
@@ -176,9 +176,9 @@ app.layout = html.Div([
     ]),
         
     html.Div(["This project was developed in Python. The code for the APIs calls and the Dashboard is ", html.A("here.",
-                    href='https://github.com/AlvaroAltamiranoM', target="_blank"),' A one-pager definition of the indicator can be downloaded '
+                    href='https://github.com/AlvaroAltamiranoM/US-Census.gov-APIS-and-Retirement-Dashboard', target="_blank"),' A one-pager definition of the indicators can be downloaded '
               , html.A("here.",
-                    href='https://github.com/AlvaroAltamiranoM', target="_blank")
+                    href='https://github.com/AlvaroAltamiranoM/US-Census.gov-APIS-and-Retirement-Dashboard/blob/main/Definitions%20of%20indicators.pdf', target="_blank")
               ], style={'marginTop': '6em',
                                 'marginBottom': '1em','display': 'block',
                                 'borderTop': '1px solid #d6d6d6',
@@ -1042,6 +1042,3 @@ def update_graph1(xaxis_column_name, yaxis_column_name):
 
 if __name__ == '__main__':
     app.run_server(debug=True, use_reloader=False, threaded=True)
-
-
-
