@@ -81,7 +81,7 @@ def json_to_dataframe(response):
 #2019
 #County level population
 # 65+ & 85+
-url_c1="https://api.census.gov/data/2019/pep/charagegroups?get=NAME,SEX,POP&AGEGROUP=27,26,0&for=county:*&key=a190abb85e44d5290382038b4c388f9046dd3e32"
+url_c1="https://api.census.gov/data/2019/pep/charagegroups?get=NAME,SEX,POP&AGEGROUP=27,26,0&for=county:*&key="
 response_c1 = requests.request("GET", url_c1)
 df_c = json_to_dataframe(response_c1)
 df_c['fips'] = df_c['state'] + df_c['county']
