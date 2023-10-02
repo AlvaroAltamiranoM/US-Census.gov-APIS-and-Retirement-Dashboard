@@ -77,55 +77,6 @@ def json_to_dataframe(response):
     """
     return pd.DataFrame(response.json()[1:], columns=response.json()[0])
 
-'''
-#2019
-#County level population
-# 65+ & 85+
-url_c1="https://api.census.gov/data/2019/pep/charagegroups?get=NAME,SEX,POP&AGEGROUP=27,26,0&for=county:*&key="
-response_c1 = requests.request("GET", url_c1)
-df_c = json_to_dataframe(response_c1)
-df_c['fips'] = df_c['state'] + df_c['county']
-df_c = df_c[df_c['state']!="72"]
-
-df_c = df_c.pivot(index='NAME', columns='AGEGROUP', values=['POP','fips'])
-df_c = df_c.iloc[:, 0:4]
-df_c.columns = df_c.columns.droplevel(0)
-df_c.columns = ['0', '26', '27', 'fips']
-
-df_c["26"] = df_c["26"].astype(int)
-df_c["0"] = df_c["0"].astype(int)
-df_c["27"] = df_c["27"].astype(int)
-df_c['%65+'] = (df_c['26']/df_c['0'])*100
-df_c['%85+'] = (df_c['27']/df_c['0'])*100
-df_c['county']  = df_c.index
-df_c = df_c.drop(['0'], 1)
-
-df_c.to_csv('pop_county.csv')
-'''
-
-'''
-#2010
-#County level population
-# 65+ & 85+
-url_c1_2010="https://api.census.gov/data/2000/pep/int_charagegroups?get=GEONAME,POP,DATE_DESC,AGEGROUP&for=state:*&DATE_=12&key=a190abb85e44d5290382038b4c388f9046dd3e32"
-response_c1_2010 = requests.request("GET", url_c1_2010)
-df_c_2010 = json_to_dataframe(response_c1_2010)
-df_c_2010['fips'] = df_c_2010['state'] + df_c_2010['county']
-df_c_2010 = df_c_2010[df_c_2010['state']!="72"]
-df_c = df_c.pivot(index='NAME', columns='AGEGROUP', values=['POP','fips'])
-df_c = df_c.iloc[:, 0:4]
-df_c.columns = df_c.columns.droplevel(0)
-df_c.columns = ['0', '26', '27', 'fips']
-df_c["26"] = df_c["26"].astype(int)
-df_c["0"] = df_c["0"].astype(int)
-df_c["27"] = df_c["27"].astype(int)
-df_c['%65+'] = (df_c['26']/df_c['0'])*100
-df_c['%85+'] = (df_c['27']/df_c['0'])*100
-df_c['county']  = df_c.index
-df_c = df_c.drop(['0'], 1)
-df_c.to_csv('pop_county.csv')
-'''
-
 #State level population
 # 65+ & 85+
 url_s1 =   "https://api.census.gov/data/2019/acs/acs1/subject?get=group(S0101)&for=state:*&key=a190abb85e44d5290382038b4c388f9046dd3e32"
@@ -197,20 +148,6 @@ df_s_race = json_to_dataframe(response_s1_race)
 df_s_race = df_s_race[['NAME','S0103_C01_006E','S0103_C01_007E','S0103_C01_009E','S0103_C01_013E']]
 df_s_race = df_s_race[df_s_race['NAME']!='Puerto Rico']
 
-'''
-#Poverty, County level
-# 65+
-url_p_65_c=   "https://api.census.gov/data/2020/acs/acs5/subject?get=NAME,S1701_C01_010E,S1701_C02_010E&for=county:*&key=a190abb85e44d5290382038b4c388f9046dd3e32"
-response = requests.request("GET", url_p_65_c)
-df_p_65_c = json_to_dataframe(response)
-df_p_65_c["POP"] = df_p_65_c["S1701_C01_010E"].astype(int)
-df_p_65_c["Below_poverty"] = df_p_65_c["S1701_C02_010E"].astype(int)
-df_p_65_c['Percent_Poor'] = (df_p_65_c.Below_poverty/df_p_65_c.POP)*100
-df_p_65_c = df_p_65_c[df_p_65_c['state']!="72"]
-df_p_65_c['fips'] = df_p_65_c.state + df_p_65_c.county
-df_p_65_c = df_p_65_c.drop(['S1701_C01_010E', 'S1701_C02_010E','state','county'], 1)
-df_p_65_c.to_csv('poverty_county.csv')
-'''
 #Poverty, State level
 # 65+
 url_p_65 =   "https://api.census.gov/data/2019/acs/acs1/subject?get=NAME,S1701_C03_011EA,S1701_C01_010E,S1701_C02_010E&for=state:*&key=a190abb85e44d5290382038b4c388f9046dd3e32"
@@ -321,6 +258,32 @@ df_emp_65_74_75_sex_women[cols] = df_emp_65_74_75_sex_women[cols].round(1)
 
 df_emp_65_74_75_sex_women.to_csv('emp_state_women.csv', index=False)
 
+#Agregating state level indicators
+data_frames_s = [df_s, df_emp_65_s, df_p_65_s, df_ret_s]
+df_merged_s = reduce(lambda  left,right: pd.merge(left,right,on=['states'],
+                                            how='outer'), data_frames_s)
+
+df_table_s = df_merged_s[['NAME_y','26','27','%65+','%85+','Below_poverty','Percent_Poor',
+                          'Employed_65_74','Employed_75+','Retirement_income','Social_security']]
+
+df_table_s = df_table_s.drop[['NAME_y']]
+df_table_s = df_table_s.iloc[:, 1:]
+
+
+df_table_s.columns = ['Name_y', 'Population 65+', 'Population 85+', 'Share of population 65+ (%)',
+                      'Share of population 85+ (%)','People 65+ living below poverty',
+                      'People 65+ living below poverty (%)', 'Employment at 65-74 (%)',
+                      'Employment at 75+ (%)','People 60+ with retirement income (%)',
+                      'People 60+ with social security income (%)']
+
+
+precision = 1
+df_table_s['Share of population 65+ (%)'] = df_table_s['Share of population 65+ (%)'].round(decimals = precision)
+df_table_s['Share of population 85+ (%)'] = df_table_s['Share of population 85+ (%)'].round(decimals = precision)
+df_table_s['People 65+ living below poverty (%)'] = df_table_s['People 65+ living below poverty (%)'].round(decimals = precision)
+df_table_s.to_csv('table_state.csv', index=False)
+
+
 '''
 # 65 to 74 years
 url_emp_65_74_75_c =   "https://api.census.gov/data/2020/acs/acs5/subject?get=NAME,S2301_C03_010E,S2301_C03_011E&for=county:*&key=a190abb85e44d5290382038b4c388f9046dd3e32"
@@ -332,6 +295,68 @@ df_emp_65_c = df_emp_65_c[df_emp_65_c['state']!="72"]
 df_emp_65_c['fips'] = df_emp_65_c.state + df_emp_65_c.county
 df_emp_65_c = df_emp_65_c.drop(['S2301_C03_010E', 'S2301_C03_011E','state','county'], 1)
 df_emp_65_c.to_csv('emp_county.csv')
+'''
+'''
+#2019
+#County level population
+# 65+ & 85+
+url_c1="https://api.census.gov/data/2019/pep/charagegroups?get=NAME,SEX,POP&AGEGROUP=27,26,0&for=county:*&key="
+response_c1 = requests.request("GET", url_c1)
+df_c = json_to_dataframe(response_c1)
+df_c['fips'] = df_c['state'] + df_c['county']
+df_c = df_c[df_c['state']!="72"]
+
+df_c = df_c.pivot(index='NAME', columns='AGEGROUP', values=['POP','fips'])
+df_c = df_c.iloc[:, 0:4]
+df_c.columns = df_c.columns.droplevel(0)
+df_c.columns = ['0', '26', '27', 'fips']
+
+df_c["26"] = df_c["26"].astype(int)
+df_c["0"] = df_c["0"].astype(int)
+df_c["27"] = df_c["27"].astype(int)
+df_c['%65+'] = (df_c['26']/df_c['0'])*100
+df_c['%85+'] = (df_c['27']/df_c['0'])*100
+df_c['county']  = df_c.index
+df_c = df_c.drop(['0'], 1)
+
+df_c.to_csv('pop_county.csv')
+'''
+
+'''
+#2010
+#County level population
+# 65+ & 85+
+url_c1_2010="https://api.census.gov/data/2000/pep/int_charagegroups?get=GEONAME,POP,DATE_DESC,AGEGROUP&for=state:*&DATE_=12&key=a190abb85e44d5290382038b4c388f9046dd3e32"
+response_c1_2010 = requests.request("GET", url_c1_2010)
+df_c_2010 = json_to_dataframe(response_c1_2010)
+df_c_2010['fips'] = df_c_2010['state'] + df_c_2010['county']
+df_c_2010 = df_c_2010[df_c_2010['state']!="72"]
+df_c = df_c.pivot(index='NAME', columns='AGEGROUP', values=['POP','fips'])
+df_c = df_c.iloc[:, 0:4]
+df_c.columns = df_c.columns.droplevel(0)
+df_c.columns = ['0', '26', '27', 'fips']
+df_c["26"] = df_c["26"].astype(int)
+df_c["0"] = df_c["0"].astype(int)
+df_c["27"] = df_c["27"].astype(int)
+df_c['%65+'] = (df_c['26']/df_c['0'])*100
+df_c['%85+'] = (df_c['27']/df_c['0'])*100
+df_c['county']  = df_c.index
+df_c = df_c.drop(['0'], 1)
+df_c.to_csv('pop_county.csv')
+'''
+'''
+#Poverty, County level
+# 65+
+url_p_65_c=   "https://api.census.gov/data/2020/acs/acs5/subject?get=NAME,S1701_C01_010E,S1701_C02_010E&for=county:*&key=a190abb85e44d5290382038b4c388f9046dd3e32"
+response = requests.request("GET", url_p_65_c)
+df_p_65_c = json_to_dataframe(response)
+df_p_65_c["POP"] = df_p_65_c["S1701_C01_010E"].astype(int)
+df_p_65_c["Below_poverty"] = df_p_65_c["S1701_C02_010E"].astype(int)
+df_p_65_c['Percent_Poor'] = (df_p_65_c.Below_poverty/df_p_65_c.POP)*100
+df_p_65_c = df_p_65_c[df_p_65_c['state']!="72"]
+df_p_65_c['fips'] = df_p_65_c.state + df_p_65_c.county
+df_p_65_c = df_p_65_c.drop(['S1701_C01_010E', 'S1701_C02_010E','state','county'], 1)
+df_p_65_c.to_csv('poverty_county.csv')
 '''
 #Households with retirement income, State level
 # 60+
@@ -374,28 +399,3 @@ df_table_c.columns = ['County', 'Population 65+', 'Population 85+', 'Share of po
                       'People 60+ with social security income (%)']
 df_table_c.to_csv('table_county.csv')
 '''
-
-#Agregating state level indicators
-data_frames_s = [df_s, df_emp_65_s, df_p_65_s, df_ret_s]
-df_merged_s = reduce(lambda  left,right: pd.merge(left,right,on=['states'],
-                                            how='outer'), data_frames_s)
-
-df_table_s = df_merged_s[['NAME_y','26','27','%65+','%85+','Below_poverty','Percent_Poor',
-                          'Employed_65_74','Employed_75+','Retirement_income','Social_security']]
-
-df_table_s = df_table_s.drop[['NAME_y']]
-df_table_s = df_table_s.iloc[:, 1:]
-
-
-df_table_s.columns = ['Name_y', 'Population 65+', 'Population 85+', 'Share of population 65+ (%)',
-                      'Share of population 85+ (%)','People 65+ living below poverty',
-                      'People 65+ living below poverty (%)', 'Employment at 65-74 (%)',
-                      'Employment at 75+ (%)','People 60+ with retirement income (%)',
-                      'People 60+ with social security income (%)']
-
-
-precision = 1
-df_table_s['Share of population 65+ (%)'] = df_table_s['Share of population 65+ (%)'].round(decimals = precision)
-df_table_s['Share of population 85+ (%)'] = df_table_s['Share of population 85+ (%)'].round(decimals = precision)
-df_table_s['People 65+ living below poverty (%)'] = df_table_s['People 65+ living below poverty (%)'].round(decimals = precision)
-df_table_s.to_csv('table_state.csv', index=False)
